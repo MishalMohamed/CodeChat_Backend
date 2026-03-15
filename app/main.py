@@ -25,8 +25,13 @@ from app.services.chat_service import (
     get_repository_chats
 )
 
+from app.rag.rag_pipeline import RAGPipeline, RAGConfig
+from app.services.chat_service import save_chat
+from app.services.repository_service import get_repository_if_indexed
+
 app = FastAPI()
 
+rag_pipeline = RAGPipeline(RAGConfig())
 
 # -----------------------------
 # User Registration
@@ -219,3 +224,41 @@ def fetch_index_path(
     path = get_index_path(db, repo_id)
 
     return {"index_path": path}
+
+@app.post("/chat/query")
+def query_repository(
+    repo_id: int,
+    query: str,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    
+    # Check repository belongs to user and is indexed
+    repo = get_repository_if_indexed(db, repo_id)
+
+    # Load FAISS index
+    rag_pipeline.load_index(repo.faiss_index_path)
+
+    # Run RAG query
+    response = rag_pipeline.query(query)
+
+    # Save chat history
+    save_chat(
+        db=db,
+        user_id=current_user.id,
+        repository_url=repo.repo_url,
+        query_text=query,
+        response_text=response.answer
+    )
+
+    return {
+        "answer": response.answer,
+        "sources": [
+            {
+                "file": meta.file_path,
+                "symbol": meta.symbol_name,
+                "line": meta.start_line
+            }
+            for meta, score in response.retrieved_chunks
+        ]
+    }

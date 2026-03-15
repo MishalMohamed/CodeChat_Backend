@@ -60,7 +60,7 @@ backend
 
 ---
 
-# API Endpoints
+## API Endpoints
 
 ### Authentication
 
@@ -73,19 +73,26 @@ POST /login
 
 ```
 POST /repository/add
-GET /repository/list
-GET /repository/status/{repo_id}
+GET  /repository/list
+GET  /repository/status/{repo_id}
 POST /repository/update-status
 POST /repository/index/{repo_id}
 ```
 
-### RAG Query
+### Chat / RAG
 
 ```
 POST /chat/query
+POST /chat/save
+GET  /chat/history
+GET  /chat/repository
 ```
 
-Retrieves relevant code chunks from the FAISS index and generates an AI response.
+### Index Mapping
+
+```
+GET /repository/index-path/{repo_id}
+```
 
 ---
 
